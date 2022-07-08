@@ -2,19 +2,18 @@
   import './lib/app.css';
   import {AudioPlayer} from 'svelte-mp3';
   import WestminsterChime from './assets/westminster-chime.mp3';
-
-  let bellTimes = [
-    '08:20:00',
-    '09:20:00',
-    '10:20:00',
-    '11:20:00',
-    '12:20:00',
-    '13:20:00',
-    '14:20:00',
-    '15:20:00',
-    '16:20:00',
-  ]
-
+  let bellTimesText = JSON.parse(window.localStorage.getItem('bellTimes')).join('\n') ?? `08:20:00
+09:20:00
+10:20:00
+11:20:00
+12:20:00
+13:20:00
+14:20:00
+15:20:00
+16:20:00
+`
+  $: bellTimes = bellTimesText.split('\n')
+  $: window.localStorage.setItem('bellTimes', JSON.stringify(bellTimes))
   let time = new Date()
   let timeDisplay = `${zp(time.getHours())}:${zp(time.getMinutes())}:${zp(time.getSeconds())}`
   setInterval(() => {
@@ -39,13 +38,21 @@
   let volume = 0.8
   /** @type {boolean} */
   let isInMute = false
-  let current
+  let isPlaying = false
 
-  function play() {
-    audio.play()
+  async function play() {
+    if (isPlaying) {
+      return
+    }
+    isPlaying = true
+    await audio.play()
   }
 
   function pause() {
+    if (!isPlaying) {
+      return
+    }
+    isPlaying = false
     audio.pause()
   }
 
@@ -64,7 +71,7 @@
   {timeDisplay}
 </div>
 <div class="text-xl">
-  <label class="p-2">Emergency mute <input type="checkbox" bind:checked={isInMute} on:click="{toggleMute}"></label>
+  <label class="p-2">ปิดเสียง <input type="checkbox" bind:checked={isInMute} on:click="{toggleMute}"></label>
   <AudioPlayer 
     bind:audio 
     bind:controller 
@@ -80,7 +87,9 @@
     enableMediaSession={false}
     on:ended={()=>{
       audio.currentTime = 0
+      isPlaying = false
     }}
     urls={[WestminsterChime]} />
+    <textarea bind:value="{bellTimesText}"></textarea>
 </div>
 </main>
